@@ -1,47 +1,67 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 
 defineProps({
   msg: String
 })
 
-const rotate = 72
-const transform = ref('')
-transform.value = `rotate(${rotate}deg)`
+const rotate = ref(0)
 
-const getRect = (ctx, x, y, w, h, rotate) => {
-  const originX = x
-  const originY = y
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  console.log(x, y)
-  x = originX + Math.cos(rotate * Math.PI / 180) * w
-  y = originY +  Math.sin(rotate * Math.PI / 180) * w
-  ctx.lineTo(x, y);
-  console.log(x, y)
-  const z = Math.sqrt(w * w+ h * h)
-  const originRotate = Math.round(Math.atan(w/h) * 180 / Math.PI)
-  console.log(originRotate, rotate + originRotate)
-  x = originX + Math.cos((rotate + originRotate) * Math.PI / 180) * z
-  y = originY + Math.sin((rotate + originRotate) * Math.PI / 180) * z
-  console.log(Math.cos((rotate + originRotate) * Math.PI / 180) * z, Math.sin((rotate + originRotate) * Math.PI / 180) * z)
-  console.log(x, y)
-  ctx.lineTo(x, y);
-  x = originX - Math.sin(rotate * Math.PI / 180) * w
-  y = originY +  Math.cos(rotate * Math.PI / 180) * w
-  console.log(x, y)
-  ctx.lineTo(x, y);
-  ctx.lineTo(originX, originY);
-  ctx.stroke();
+const transform = computed(() => `rotate(${rotate.value}deg)`)
+
+watch(transform, value => {
+  drawRect()
+})
+
+const rotateCoordinates = (coor, width, height, rotate) => {
+  const result = [coor]
+  const [x, y] = coor
+  const radian = rotate / 180 * Math.PI
+  let a = x + width *  Math.cos(radian)
+  let b = y + height *  Math.sin(radian)
+  result.push([a, b])
+  const c = Math.sqrt(width * width + height * height)
+  const originRadian =  Math.atan(height / width)
+  a = x + c *  Math.cos(radian + originRadian)
+  b = y + c *  Math.sin(radian + originRadian)
+  result.push([a, b])
+  a = x + height * Math.cos(radian + Math.PI / 2)
+  b = y + height * Math.sin(radian + Math.PI / 2)
+  result.push([a, b])
+  return result
+}
+
+const width = 100
+const height = 100
+const beigin = [450, 300]
+const ctx = ref(null)
+
+const drawRect = () => {
+  ctx.value.clearRect(0, 0, 600, 600)
+  ctx.value.fillRect(300, 300, 100, 100)
+  const coordinates = rotateCoordinates(beigin, width, height, rotate.value)
+  ctx.value.beginPath();
+  ctx.value.moveTo(...beigin);
+  for (const coor of coordinates) {
+    ctx.value.lineTo(...coor);
+  }
+  // ctx.value.lineTo(...beigin)
+  ctx.value.closePath();
+  // ctx.value.stroke()
+  ctx.value.fill()
 }
 
 const canvas = ref(null)
 onMounted(() => {
-  const ctx = canvas.value.getContext('2d')
-  ctx.fillStyle = 'green'
-  ctx.fillRect(0, 0, 100, 100)
+  ctx.value = canvas.value.getContext('2d')
+  ctx.value.fillStyle = 'green'
+  // ctx.value.fillRect(300, 300, 100, 100)
   // ctx.fillRect(150, 0, 100, 100)
-  getRect(ctx, 150, 0, 100, 100, rotate)
+  // getRect(ctx, 150, 0, 100, 100, rotate)
+  drawRect()
+  setInterval(() => {
+    rotate.value += 1
+  }, 100);
 })
 </script>
 
@@ -51,7 +71,7 @@ onMounted(() => {
     <div class="item rotate">2</div>
   </div>
   <div class="box">
-    <canvas class="canvas" ref="canvas"></canvas>
+    <canvas class="canvas" ref="canvas" width="600" height="600"></canvas>
   </div>
 </template>
 
